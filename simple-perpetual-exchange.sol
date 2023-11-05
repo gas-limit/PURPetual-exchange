@@ -103,8 +103,6 @@ contract perpetual {
         if(_leverage == 0 || _collateralAmountUsd == 0) revert ZeroAmount();
         if(userPositions[msg.sender].borrowAmountUsd > 0) revert PositionOpen();
 
-        checkLiquidityBorrow(_collateralAmountUsd);
-
         // get wbtc price
         uint256 wbtcPrice_ = getWBTCPrice();
 
@@ -114,7 +112,8 @@ contract perpetual {
         // fix math
         uint256 borrowAmountWbtc_ = _collateralAmountUsd / wbtcPrice_;
 
-        
+        checkLiquidityBorrow(borrowAmountWbtc_);
+
         userPositions[msg.sender] = position(
             _positionType,
             _leverage,
@@ -128,17 +127,32 @@ contract perpetual {
     }
 
     // increase size of position
-    function increasePosition(uint256 _amount) public {
+    function increasePosition(uint256 _collateralAmountUsd) public {
+        if (_collateralAmountUsd == 0) revert ZeroAmount();
+
+        position storage userPosition_ = userPositions[msg.sender];
+
+        uint256 wbtcPrice_ = getWBTCPrice();
+
+        uint256 borrowAmountUsd_ = _collateralAmountUsd * userPosition_.leverage;
+
+        uint256 borrowAmountWbtc_ = _collateralAmountUsd / wbtcPrice_;
+
+        checkLiquidityBorrow(borrowAmountWbtc_);
+
+        userPosition_.borrowAmountUsd = borrowAmountUsd_;
+        userPosition_.borrowAmountWbtc = borrowAmountWbtc_;
+        
 
     }
 
     // increase collateral
-    function increaseCollateral(uint256 _amount) public {
-        if (_amount == 0) revert ZeroAmount();
+    function increaseCollateral(uint256 _collateralAmountUsd) public {
+        if (_collateralAmountUsd == 0) revert ZeroAmount();
 
-        userPositions[msg.sender].collateralAmount += _amount;
+        userPositions[msg.sender].collateralAmount += _collateralAmountUsd;
 
-        USDC.safeTransferFrom(msg.sender, address(this), _amount);
+        USDC.safeTransferFrom(msg.sender, address(this), _collateralAmountUsd);
 
     }
 
