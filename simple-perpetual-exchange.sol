@@ -17,7 +17,7 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 // USDC price hard coded
 
-contract perpetual {
+contract Perpetual_Exchange {
 
     using SafeERC20 for IERC20;
     AggregatorV3Interface immutable internal dataFeed;
@@ -26,20 +26,13 @@ contract perpetual {
         bool positionType; // true if long, false if short
         uint256 leverage; // amount of leverage, 1 decimal place 100 = 10x or 105 = 10.5x
         uint256 collateralAmount; // USDC
-        uint256 borrowAmountUsd; // USD borrowed
-        uint256 borrowAmountWbtc; // BTC borrowed
+        uint256 borrowAmountUsdc; // USDC borrowed
+        uint256 borrowAmountWbtc; // WBTC borrowed
     }
 
     // WBTC address
     IERC20 public immutable WBTC; 
     IERC20 public immutable USDC;
-
-    // Decimals constants
-    uint256 constant USDC_DECIMALS = 1e6; // 6 decimal places
-    uint256 constant WBTC_DECIMALS = 1e8; // 8 decimal places
-    uint256 constant PRICE_FEED_DECIMALS = 1e8; // 8 decimal places for Chainlink price feed
-    uint256 constant LEVERAGE_DECIMALS = 1e1; // 1 decimal place for leverage
-    uint256 constant RATIO_DECIMALS = 1e4; // Used for ratios like collateral and reserve ratios
 
     // tracking only amount deposited, because fees are not required
     mapping(address => uint256) public userDeposit;
@@ -49,15 +42,43 @@ contract perpetual {
     uint256 public totalDeposited;
     uint256 public totalBorrowed;
 
-    // constant
+    // constants
+    // no liquidations so don't need minimum collateral
+    // uint256 constant MINIMUM_COLLATERAL_RATIO = 11_000; // 110.00% =  11,000
+    // 10 USDC minimum to borrow
+    uint256 constant MINIMUM_COLLATERAL = 10_000_000;
+
+
     // collateral must always be >1.5x the amount of borrowed
-    uint256 constant MINIMUM_COLLATERAL_RATIO = 11_000; // 110.00% =  11,000
     uint256 constant MINIMUM_RESERVE_RATIO = 11_500; // 115.00% = 11,500
+
+    event LiquidityDeposited(address indexed user, uint256 amount);
+    event LiquidityWithdrawn(address indexed user, uint256 amount);
+    event PositionOpened(
+        address indexed user, 
+        bool positionType, 
+        uint256 leverage, 
+        uint256 collateralAmountUsdc,
+        uint256 borrowAmountUsdc,
+        uint256 borrowAmountWbtc
+    );
+    event PositionIncreased(
+        address indexed user, 
+        uint256 additionalCollateralAmountUsdc,
+        uint256 newborrowAmountUsdc,
+        uint256 newBorrowAmountWbtc
+    );
+    event CollateralIncreased(
+        address indexed user, 
+        uint256 additionalCollateralAmountUsdc
+    );
+
 
     // errors
     error ZeroAmount();
     error NotEnoughLiquidity();
     error PositionOpen();
+    error NotEnoughCollateral();
 
     constructor(address _WBTC, address _USDC, address chainlinkPriceFeed){
         WBTC = IERC20(_WBTC);
@@ -77,6 +98,8 @@ contract perpetual {
 
         //transfer the funds
         WBTC.safeTransferFrom(msg.sender, address(this), _amount);
+
+        emit LiquidityDeposited(msg.sender, _amount);
     }
 
     // withdraw liquidity
@@ -91,10 +114,11 @@ contract perpetual {
 
         WBTC.safeTransfer(msg.sender, _amount);
 
+        emit LiquidityWithdrawn(msg.sender, _amount);
+
     }
     
 
-    // get price 3505489359000 
     function getWBTCPrice() public view returns (uint256){
         (,int256 answer,,,) = dataFeed.latestRoundData();
         return uint256(answer);
@@ -104,85 +128,103 @@ contract perpetual {
     function openPosition(
         bool _positionType, 
         uint256 _leverage,
-        uint256 _collateralAmountUsd)
+        uint256 _collateralAmountUsdc)
         public {
-        if(_leverage == 0 || _collateralAmountUsd == 0) revert ZeroAmount();
-        if(userPositions[msg.sender].borrowAmountUsd > 0) revert PositionOpen();
+        if(_leverage == 0 || _collateralAmountUsdc == 0) revert ZeroAmount();
+        if(userPositions[msg.sender].borrowAmountUsdc > 0) revert PositionOpen();
+        if(_collateralAmountUsdc < MINIMUM_COLLATERAL) revert NotEnoughCollateral();
 
         // get wbtc price
         uint256 wbtcPrice_ = getWBTCPrice();
 
         // get borrowed amount in USD
-        uint256 borrowAmountUsd_ = _collateralAmountUsd * _leverage / LEVERAGE_DECIMALS;
+        uint256 borrowAmountUsdc_ = _collateralAmountUsdc * _leverage;
 
-        // get borrowed amount in WBTC, with price scaling adjustment
-        uint256 borrowAmountWbtc_ = (_collateralAmountUsd * USDC_DECIMALS * WBTC_DECIMALS) / (wbtcPrice_ * PRICE_FEED_DECIMALS);
+        uint256 borrowAmountWbtc_ = borrowAmountUsdc_ *  wbtcPrice_;
 
         checkLiquidityBorrow(borrowAmountWbtc_);
 
         userPositions[msg.sender] = position(
             _positionType,
             _leverage,
-            _collateralAmountUsd,
-            borrowAmountUsd_,
+            _collateralAmountUsdc,
+            borrowAmountUsdc_,
             borrowAmountWbtc_
         );
 
         totalBorrowed += borrowAmountWbtc_;
 
-        USDC.safeTransferFrom(msg.sender, address(this), _collateralAmountUsd);
+        USDC.safeTransferFrom(msg.sender, address(this), _collateralAmountUsdc);
+
+        emit PositionOpened(
+            msg.sender, 
+            _positionType, 
+            _leverage, 
+            _collateralAmountUsdc,
+            borrowAmountUsdc_,
+            borrowAmountWbtc_
+        );
         
     }
 
     // increase size of position
-    function increasePosition(uint256 _collateralAmountUsd) public {
-        if (_collateralAmountUsd == 0) revert ZeroAmount();
+    function increasePosition(uint256 _collateralAmountUsdc) public {
+        if (_collateralAmountUsdc == 0) revert ZeroAmount();
+        if(_collateralAmountUsdc < MINIMUM_COLLATERAL) revert NotEnoughCollateral();
 
         position storage userPosition_ = userPositions[msg.sender];
 
         uint256 wbtcPrice_ = getWBTCPrice();
 
-        uint256 borrowAmountUsd_ = _collateralAmountUsd * userPosition_.leverage / LEVERAGE_DECIMALS;
+        uint256 borrowAmountUsdc_ = _collateralAmountUsdc * userPosition_.leverage;
 
-        uint256 borrowAmountWbtc_ = (_collateralAmountUsd * USDC_DECIMALS * WBTC_DECIMALS) / (wbtcPrice_ * PRICE_FEED_DECIMALS);
+        uint256 borrowAmountWbtc_ = (_collateralAmountUsdc) / (wbtcPrice_);
 
         checkLiquidityBorrow(borrowAmountWbtc_);
 
-        userPosition_.borrowAmountUsd = borrowAmountUsd_;
-        userPosition_.borrowAmountWbtc = borrowAmountWbtc_;
+        userPosition_.borrowAmountUsdc += borrowAmountUsdc_;
+        userPosition_.borrowAmountWbtc += borrowAmountWbtc_;
 
         totalBorrowed += borrowAmountWbtc_;
 
-        USDC.safeTransferFrom(msg.sender, address(this), _collateralAmountUsd);
+        USDC.safeTransferFrom(msg.sender, address(this), _collateralAmountUsdc);
+
+        emit PositionIncreased(
+            msg.sender, 
+            _collateralAmountUsdc,
+            userPosition_.borrowAmountUsdc,
+            userPosition_.borrowAmountWbtc
+        );
         
     }
 
     // increase collateral
-    function increaseCollateral(uint256 _collateralAmountUsd) public {
-        if (_collateralAmountUsd == 0) revert ZeroAmount();
+    function increaseCollateral(uint256 _collateralAmountUsdc) public {
+        if (_collateralAmountUsdc == 0) revert ZeroAmount();
 
-        userPositions[msg.sender].collateralAmount += _collateralAmountUsd;
+        userPositions[msg.sender].collateralAmount += _collateralAmountUsdc;
 
-        USDC.safeTransferFrom(msg.sender, address(this), _collateralAmountUsd);
+        USDC.safeTransferFrom(msg.sender, address(this), _collateralAmountUsdc);
 
+        emit CollateralIncreased(msg.sender, _collateralAmountUsdc);
     }
     
     // check available liquidity when borrowing
     function checkLiquidityBorrow(uint256 _amount) public view {
         uint256 netBorrow = totalBorrowed + _amount;
 
-        uint256 liquidityRatioAfter = (totalDeposited * WBTC_DECIMALS) / netBorrow;
+        uint256 liquidityRatioAfter = (totalDeposited) / netBorrow;
 
-        if (liquidityRatioAfter < MINIMUM_RESERVE_RATIO * RATIO_DECIMALS / WBTC_DECIMALS) revert NotEnoughLiquidity();
+        if (liquidityRatioAfter < MINIMUM_RESERVE_RATIO) revert NotEnoughLiquidity();
     }
 
     // check available liquidity when withdrawing
     function checkLiquidityWithdraw(uint256 _amount) public view {
         uint256 netSupply = (totalDeposited - _amount);
 
-        uint256 liquidityRatioAfter = (netSupply * WBTC_DECIMALS) / totalBorrowed;
+        uint256 liquidityRatioAfter = (netSupply) / totalBorrowed;
 
-        if (liquidityRatioAfter < MINIMUM_RESERVE_RATIO * RATIO_DECIMALS / WBTC_DECIMALS) revert NotEnoughLiquidity();
+        if (liquidityRatioAfter < MINIMUM_RESERVE_RATIO) revert NotEnoughLiquidity();
     }
 
 }
