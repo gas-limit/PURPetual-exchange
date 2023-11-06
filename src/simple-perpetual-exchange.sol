@@ -4,6 +4,8 @@ pragma solidity ^0.8.4;
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "./interfaces/AggregatorV3Interface.sol";
 
+// Mission 1 of Owen Thurm's Security Course: Create a Perpetual Exchange
+
 // following functionalities & corresponding tests
 // liquidity providers can deposit and withdraw liquidity
 // a way to get the realtime price of the asset being traded
