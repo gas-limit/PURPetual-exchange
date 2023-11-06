@@ -1,4 +1,3 @@
-```markdown
 # Perpetual Exchange Smart Contract
 
 This repository contains a Solidity smart contract for the first mission of Owen Thurm's Security Course. The mission is to create a perpetual exchange with specified functionalities and corresponding tests.
@@ -72,6 +71,3 @@ Contributions are welcome. Please ensure to follow the mission's specifications 
 ## License
 
 This project is under the MIT License - see the LICENSE file for details.
-```
-
-Make sure to adjust the clone URL to match your repository's actual URL. This README.md provides a clear overview of the mission's objectives and how to get started with the smart contract, including setup, compilation, and testing instructions.
