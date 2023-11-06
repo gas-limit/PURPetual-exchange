@@ -19,6 +19,10 @@ import "./interfaces/AggregatorV3Interface.sol";
 
 // USDC price hard coded
 
+///////// TODO //////////
+// test for when supply goes to zero and there are loans
+
+
 contract perpetual {
 
     using SafeERC20 for IERC20;
@@ -231,9 +235,18 @@ contract perpetual {
 
     // check available liquidity when withdrawing
     function checkLiquidityWithdraw(uint256 _amount) public view {
+
+        uint256 totalBorrowed_ = totalBorrowed;
+
         uint256 netSupply = (totalDeposited - _amount);
 
-        uint256 liquidityRatioAfter = (netSupply * LIQUIDITY_SCALE) / totalBorrowed;
+        // added case for when there is no borrowing and to prevent zero division
+        if (netSupply == 0 && totalBorrowed_ == 0) return;
+
+        // added case for when the supply goes to zero and there is borrowing
+        if (netSupply == 0 && totalBorrowed_ > 0) revert NotEnoughLiquidity();
+
+        uint256 liquidityRatioAfter = (netSupply * LIQUIDITY_SCALE) / totalBorrowed_;
 
         if (liquidityRatioAfter < MINIMUM_RESERVE_RATIO) revert NotEnoughLiquidity();
     }
