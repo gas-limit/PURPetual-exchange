@@ -17,14 +17,14 @@ import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
 
 // USDC price hard coded
 
-contract Perpetual_Exchange {
+contract perpetual {
 
     using SafeERC20 for IERC20;
     AggregatorV3Interface immutable internal dataFeed;
 
     struct position {
         bool positionType; // true if long, false if short
-        uint256 leverage; // amount of leverage, 1 decimal place 100 = 10x or 105 = 10.5x
+        uint256 leverage; // amount of leverage, 10 = 10x, 2 = 2x
         uint256 collateralAmount; // USDC
         uint256 borrowAmountUsdc; // USDC borrowed
         uint256 borrowAmountWbtc; // WBTC borrowed
@@ -48,9 +48,11 @@ contract Perpetual_Exchange {
     // 10 USDC minimum to borrow
     uint256 constant MINIMUM_COLLATERAL = 10_000_000;
 
-
     // collateral must always be >1.5x the amount of borrowed
     uint256 constant MINIMUM_RESERVE_RATIO = 11_500; // 115.00% = 11,500
+
+    // helper to scale USDC to 8 decimal places for WBTC and Chainlink Pricefeed
+    uint256 constant USDC_SCALER = 10**2;
 
     event LiquidityDeposited(address indexed user, uint256 amount);
     event LiquidityWithdrawn(address indexed user, uint256 amount);
@@ -140,7 +142,9 @@ contract Perpetual_Exchange {
         // get borrowed amount in USD
         uint256 borrowAmountUsdc_ = _collateralAmountUsdc * _leverage;
 
-        uint256 borrowAmountWbtc_ = borrowAmountUsdc_ *  wbtcPrice_;
+        uint256 borrowAmountWbtc_ = (borrowAmountUsdc_ *  1e18) / wbtcPrice_;
+
+        borrowAmountWbtc_ / 1e8;
 
         checkLiquidityBorrow(borrowAmountWbtc_);
 
