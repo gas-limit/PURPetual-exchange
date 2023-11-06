@@ -2,7 +2,7 @@
 pragma solidity ^0.8.4;
 
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@chainlink/contracts/src/v0.8/interfaces/AggregatorV3Interface.sol";
+import "./interfaces/AggregatorV3Interface.sol";
 
 // following functionalities & corresponding tests
 // liquidity providers can deposit and withdraw liquidity
@@ -85,6 +85,8 @@ contract perpetual {
         WBTC = IERC20(_WBTC);
         USDC = IERC20(_USDC);
         dataFeed = AggregatorV3Interface(chainlinkPriceFeed);
+        totalDeposited = 0;
+        totalBorrowed = 0;
     }
 
     // deposit liquidity
@@ -97,10 +99,11 @@ contract perpetual {
         // update totalDeposited
         totalDeposited += _amount;
 
+        emit LiquidityDeposited(msg.sender, _amount);
+
         //transfer the funds
         WBTC.safeTransferFrom(msg.sender, address(this), _amount);
 
-        emit LiquidityDeposited(msg.sender, _amount);
     }
 
     // withdraw liquidity
@@ -113,9 +116,9 @@ contract perpetual {
 
         totalDeposited -= _amount;
 
-        WBTC.safeTransfer(msg.sender, _amount);
-
         emit LiquidityWithdrawn(msg.sender, _amount);
+
+        WBTC.safeTransfer(msg.sender, _amount);
 
     }
     
@@ -157,8 +160,6 @@ contract perpetual {
 
         totalBorrowed += borrowAmountWbtc_;
 
-        USDC.safeTransferFrom(msg.sender, address(this), _collateralAmountUsdc);
-
         emit PositionOpened(
             msg.sender, 
             _positionType, 
@@ -167,6 +168,8 @@ contract perpetual {
             borrowAmountUsdc_,
             borrowAmountWbtc_
         );
+
+        USDC.safeTransferFrom(msg.sender, address(this), _collateralAmountUsdc);
         
     }
 
@@ -192,14 +195,14 @@ contract perpetual {
 
         totalBorrowed += borrowAmountWbtc_;
 
-        USDC.safeTransferFrom(msg.sender, address(this), _collateralAmountUsdc);
-
         emit PositionIncreased(
             msg.sender, 
             _collateralAmountUsdc,
             userPosition_.borrowAmountUsdc,
             userPosition_.borrowAmountWbtc
         );
+
+        USDC.safeTransferFrom(msg.sender, address(this), _collateralAmountUsdc);
         
     }
 
@@ -209,9 +212,10 @@ contract perpetual {
 
         userPositions[msg.sender].collateralAmount += _collateralAmountUsdc;
 
+        emit CollateralIncreased(msg.sender, _collateralAmountUsdc);
+
         USDC.safeTransferFrom(msg.sender, address(this), _collateralAmountUsdc);
 
-        emit CollateralIncreased(msg.sender, _collateralAmountUsdc);
     }
     
     // check available liquidity when borrowing
