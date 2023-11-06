@@ -47,12 +47,12 @@ contract perpetual {
     // uint256 constant MINIMUM_COLLATERAL_RATIO = 11_000; // 110.00% =  11,000
     // 10 USDC minimum to borrow
     uint256 constant MINIMUM_COLLATERAL = 10_000_000;
+    // collateral must always be >1.50x the amount of borrowed
+    uint256 constant MINIMUM_RESERVE_RATIO = 15_000; // 150.00% = 15,000
+    uint256 constant WBTC_DIVISION_SCALE = 1e18;
+    uint256 constant WBTC_ACTUAL_SCALE = 1e8;
+    uint256 constant LIQUIDITY_SCALE = 1e4;
 
-    // collateral must always be >1.5x the amount of borrowed
-    uint256 constant MINIMUM_RESERVE_RATIO = 11_500; // 115.00% = 11,500
-
-    // helper to scale USDC to 8 decimal places for WBTC and Chainlink Pricefeed
-    uint256 constant USDC_SCALER = 10**2;
 
     event LiquidityDeposited(address indexed user, uint256 amount);
     event LiquidityWithdrawn(address indexed user, uint256 amount);
@@ -74,7 +74,6 @@ contract perpetual {
         address indexed user, 
         uint256 additionalCollateralAmountUsdc
     );
-
 
     // errors
     error ZeroAmount();
@@ -142,9 +141,9 @@ contract perpetual {
         // get borrowed amount in USD
         uint256 borrowAmountUsdc_ = _collateralAmountUsdc * _leverage;
 
-        uint256 borrowAmountWbtc_ = (borrowAmountUsdc_ *  1e18) / wbtcPrice_;
+        uint256 borrowAmountWbtc_ = (borrowAmountUsdc_ *  WBTC_DIVISION_SCALE) / wbtcPrice_;
 
-        borrowAmountWbtc_ / 1e8;
+        borrowAmountWbtc_ / LIQUIDITY_SCALE;
 
         checkLiquidityBorrow(borrowAmountWbtc_);
 
@@ -182,7 +181,9 @@ contract perpetual {
 
         uint256 borrowAmountUsdc_ = _collateralAmountUsdc * userPosition_.leverage;
 
-        uint256 borrowAmountWbtc_ = (_collateralAmountUsdc) / (wbtcPrice_);
+        uint256 borrowAmountWbtc_ = (_collateralAmountUsdc * WBTC_DIVISION_SCALE) / (wbtcPrice_);
+
+        borrowAmountWbtc_ / LIQUIDITY_SCALE;
 
         checkLiquidityBorrow(borrowAmountWbtc_);
 
@@ -217,7 +218,7 @@ contract perpetual {
     function checkLiquidityBorrow(uint256 _amount) public view {
         uint256 netBorrow = totalBorrowed + _amount;
 
-        uint256 liquidityRatioAfter = (totalDeposited) / netBorrow;
+        uint256 liquidityRatioAfter = (totalDeposited * LIQUIDITY_SCALE) / netBorrow;
 
         if (liquidityRatioAfter < MINIMUM_RESERVE_RATIO) revert NotEnoughLiquidity();
     }
@@ -226,7 +227,7 @@ contract perpetual {
     function checkLiquidityWithdraw(uint256 _amount) public view {
         uint256 netSupply = (totalDeposited - _amount);
 
-        uint256 liquidityRatioAfter = (netSupply) / totalBorrowed;
+        uint256 liquidityRatioAfter = (netSupply * LIQUIDITY_SCALE) / totalBorrowed;
 
         if (liquidityRatioAfter < MINIMUM_RESERVE_RATIO) revert NotEnoughLiquidity();
     }
