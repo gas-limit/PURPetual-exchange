@@ -1124,8 +1124,8 @@
       }
     },
     "src/simple-perpetual-exchange.sol": {
-      "lastModificationDate": 1699333199710,
-      "contentHash": "f2a866bffa29c47e438670f4622bde79",
+      "lastModificationDate": 1699334286599,
+      "contentHash": "67e7ddc3ed1bf034427d03ac661a2171",
       "sourceName": "src/simple-perpetual-exchange.sol",
       "solcConfig": {
         "settings": {

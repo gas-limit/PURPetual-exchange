@@ -80,6 +80,7 @@ contract perpetual {
         address indexed user, 
         uint256 additionalCollateralAmountUsdc
     );
+    event newLiquidity(uint256 percent);
 
     // errors
     error ZeroAmount();
@@ -152,9 +153,9 @@ contract perpetual {
 
         uint256 borrowAmountWbtc_ = (borrowAmountUsdc_ *  WBTC_DIVISION_SCALE) / wbtcPrice_;
 
-        // borrowAmountWbtc_ = borrowAmountUsdc_ / WBTC_ACTUAL_SCALE;
+        borrowAmountWbtc_ = borrowAmountWbtc_ / WBTC_ACTUAL_SCALE;
 
-        // checkLiquidityBorrow(borrowAmountWbtc_);
+        checkLiquidityBorrow(borrowAmountWbtc_);
 
         userPositions[msg.sender] = position(
             _positionType,
@@ -229,7 +230,7 @@ contract perpetual {
         uint256 netBorrow = totalBorrowed + _amount;
 
         uint256 liquidityRatioAfter = (totalDeposited * LIQUIDITY_SCALE) / netBorrow;
-
+        
         if (liquidityRatioAfter < MINIMUM_RESERVE_RATIO) revert NotEnoughLiquidity();
     }
 
