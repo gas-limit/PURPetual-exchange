@@ -193,7 +193,7 @@ contract perpetual {
 
         uint256 borrowAmountWbtc_ = (_collateralAmountUsdc * WBTC_DIVISION_SCALE) / (wbtcPrice_);
 
-        borrowAmountWbtc_ / LIQUIDITY_SCALE;
+        borrowAmountWbtc_ = borrowAmountWbtc_ / WBTC_ACTUAL_SCALE;
 
         checkLiquidityBorrow(borrowAmountWbtc_);
 
@@ -230,7 +230,7 @@ contract perpetual {
         uint256 netBorrow = totalBorrowed + _amount;
 
         uint256 liquidityRatioAfter = (totalDeposited * LIQUIDITY_SCALE) / netBorrow;
-        
+
         if (liquidityRatioAfter < MINIMUM_RESERVE_RATIO) revert NotEnoughLiquidity();
     }
 

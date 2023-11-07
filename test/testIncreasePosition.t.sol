@@ -6,7 +6,7 @@ import "forge-std/console.sol";
 
 import "../src/simple-perpetual-exchange.sol";
 
-contract TestBorrow is Test {
+contract TestIncreasePosition is Test {
 
     using SafeERC20 for IERC20;
 
@@ -26,12 +26,12 @@ contract TestBorrow is Test {
 
         // give tokens to this test contract
         deal(address(WBTC), address(this), WBTCAmount);
-        deal(address(USDC), address(this), USDCCollateralMin);
+        deal(address(USDC), address(this), UINT256_MAX);
 
         // approve the exchange to spend WBTC
         WBTC.safeIncreaseAllowance(address(PURPetual), WBTCAmount);
         // approve the exchange to spend USDC
-        USDC.safeIncreaseAllowance(address(PURPetual), USDCCollateralMin);
+        USDC.safeIncreaseAllowance(address(PURPetual), UINT256_MAX);
 
         // add liquidity
         PURPetual.depositLiquidity(WBTCAmount);
@@ -41,11 +41,13 @@ contract TestBorrow is Test {
 
         // check that the mapping is updated
         assertEq(PURPetual.userDeposit(address(this)), WBTCAmount);
-    }
 
-    function testOpenPosition() public {
         // open a position
         PURPetual.openPosition(true, 10, USDCCollateralMin);
+    }
+
+    function testIncreasePosition() public {
+        PURPetual.increasePosition(100e6);
 
     }
 
