@@ -1124,8 +1124,8 @@
       }
     },
     "src/simple-perpetual-exchange.sol": {
-      "lastModificationDate": 1699313524222,
-      "contentHash": "66d1b04ce5bd7a203f38763966969aad",
+      "lastModificationDate": 1699331036222,
+      "contentHash": "830ba7a9057c795ce14e74c6488df0f5",
       "sourceName": "src/simple-perpetual-exchange.sol",
       "solcConfig": {
         "settings": {
@@ -1167,6 +1167,72 @@
       "artifacts": {
         "perpetual": {
           "0.8.21+commit.d9974bed.Linux.gcc": "simple-perpetual-exchange.sol/perpetual.json"
+        }
+      }
+    },
+    "test/testBorrow.t.sol": {
+      "lastModificationDate": 1699331302029,
+      "contentHash": "94ac4ed802f1f7ffddc8a0af25f9f901",
+      "sourceName": "test/testBorrow.t.sol",
+      "solcConfig": {
+        "settings": {
+          "optimizer": {
+            "enabled": true,
+            "runs": 200
+          },
+          "metadata": {
+            "useLiteralContent": false,
+            "bytecodeHash": "ipfs",
+            "appendCBOR": true
+          },
+          "outputSelection": {
+            "*": {
+              "": [
+                "ast"
+              ],
+              "*": [
+                "abi",
+                "evm.bytecode",
+                "evm.deployedBytecode",
+                "evm.methodIdentifiers",
+                "metadata"
+              ]
+            }
+          },
+          "evmVersion": "paris",
+          "libraries": {}
+        }
+      },
+      "imports": [
+        "lib/forge-std/lib/ds-test/src/test.sol",
+        "lib/forge-std/src/Base.sol",
+        "lib/forge-std/src/StdAssertions.sol",
+        "lib/forge-std/src/StdChains.sol",
+        "lib/forge-std/src/StdCheats.sol",
+        "lib/forge-std/src/StdError.sol",
+        "lib/forge-std/src/StdInvariant.sol",
+        "lib/forge-std/src/StdJson.sol",
+        "lib/forge-std/src/StdMath.sol",
+        "lib/forge-std/src/StdStorage.sol",
+        "lib/forge-std/src/StdStyle.sol",
+        "lib/forge-std/src/StdUtils.sol",
+        "lib/forge-std/src/Test.sol",
+        "lib/forge-std/src/Vm.sol",
+        "lib/forge-std/src/console.sol",
+        "lib/forge-std/src/console2.sol",
+        "lib/forge-std/src/interfaces/IMulticall3.sol",
+        "lib/forge-std/src/safeconsole.sol",
+        "lib/foundry-chainlink-toolkit/lib/openzeppelin-contracts/contracts/token/ERC20/IERC20.sol",
+        "lib/foundry-chainlink-toolkit/lib/openzeppelin-contracts/contracts/token/ERC20/extensions/draft-IERC20Permit.sol",
+        "lib/foundry-chainlink-toolkit/lib/openzeppelin-contracts/contracts/token/ERC20/utils/SafeERC20.sol",
+        "lib/foundry-chainlink-toolkit/lib/openzeppelin-contracts/contracts/utils/Address.sol",
+        "src/interfaces/AggregatorV3Interface.sol",
+        "src/simple-perpetual-exchange.sol"
+      ],
+      "versionRequirement": "^0.8.4",
+      "artifacts": {
+        "TestBorrow": {
+          "0.8.21+commit.d9974bed.Linux.gcc": "testBorrow.t.sol/TestBorrow.json"
         }
       }
     },

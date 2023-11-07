@@ -152,9 +152,9 @@ contract perpetual {
 
         uint256 borrowAmountWbtc_ = (borrowAmountUsdc_ *  WBTC_DIVISION_SCALE) / wbtcPrice_;
 
-        borrowAmountWbtc_ / LIQUIDITY_SCALE;
+        borrowAmountWbtc_ / 1e18;
 
-        checkLiquidityBorrow(borrowAmountWbtc_);
+        // checkLiquidityBorrow(borrowAmountWbtc_);
 
         userPositions[msg.sender] = position(
             _positionType,
