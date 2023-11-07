@@ -152,7 +152,7 @@ contract perpetual {
 
         uint256 borrowAmountWbtc_ = (borrowAmountUsdc_ *  WBTC_DIVISION_SCALE) / wbtcPrice_;
 
-        borrowAmountWbtc_ / 1e18;
+        // borrowAmountWbtc_ = borrowAmountUsdc_ / WBTC_ACTUAL_SCALE;
 
         // checkLiquidityBorrow(borrowAmountWbtc_);
 

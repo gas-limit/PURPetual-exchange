@@ -8,6 +8,14 @@ import "../src/simple-perpetual-exchange.sol";
 
 contract TestBorrow is Test {
 
+    struct position {
+        bool positionType; // true if long, false if short
+        uint256 leverage; // amount of leverage, 10 = 10x, 2 = 2x
+        uint256 collateralAmount; // USDC
+        uint256 borrowAmountUsdc; // USDC borrowed
+        uint256 borrowAmountWbtc; // WBTC borrowed
+    }
+
     using SafeERC20 for IERC20;
 
     perpetual public PURPetual;
@@ -46,7 +54,20 @@ contract TestBorrow is Test {
     function testOpenPosition() public {
         // open a position
         PURPetual.openPosition(true, 10, USDCCollateralMin);
-        console.log("userPositions: ", PURPetual.userPositions(address(this)));
+
+        // (bool positionType,
+        // uint256 leverage,
+        // uint256 collateralAmount,
+        // uint256 borrowAmountUsdc,
+        // uint256 borrowAmountWbtc) = PURPetual.userPositions(address(this));
+        
+        // console.log("positionType: ", positionType);
+        // console.log("leverage: ", leverage);
+        // console.log("collateralAmount: ", collateralAmount);
+        // console.log("borrowAmountUsdc: ", borrowAmountUsdc);
+        // console.log("borrowAmountWbtc: ", borrowAmountWbtc);
+
+
     }
 
 
